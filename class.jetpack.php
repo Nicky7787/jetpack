@@ -9,7 +9,9 @@ use Automattic\Jetpack\Connection\Utils as Connection_Utils;
 use Automattic\Jetpack\Constants;
 use Automattic\Jetpack\Roles;
 use Automattic\Jetpack\Status;
+use Automattic\Jetpack\Sync\Actions as Sync_Actions;
 use Automattic\Jetpack\Sync\Functions;
+use Automattic\Jetpack\Sync\Main as Sync_Main;
 use Automattic\Jetpack\Sync\Sender;
 use Automattic\Jetpack\Sync\Users;
 use Automattic\Jetpack\Terms_Of_Service;
@@ -374,7 +376,7 @@ class Jetpack {
 	/**
 	 * @var Automattic\Jetpack\Connection\Manager
 	 */
-	protected $connection_manager;
+	public $connection_manager;
 
 	/**
 	 * @var string Transient key used to prevent multiple simultaneous plugin upgrades
@@ -560,18 +562,9 @@ class Jetpack {
 		 */
 		add_action( 'init', array( $this, 'deprecated_hooks' ) );
 
-		/*
-		 * Enable enhanced handling of previewing sites in Calypso
-		 */
-		if ( self::is_active() ) {
-			require_once JETPACK__PLUGIN_DIR . '_inc/lib/class.jetpack-iframe-embed.php';
-			add_action( 'init', array( 'Jetpack_Iframe_Embed', 'init' ), 9, 0 );
-			require_once JETPACK__PLUGIN_DIR . '_inc/lib/class.jetpack-keyring-service-helper.php';
-			add_action( 'init', array( 'Jetpack_Keyring_Service_Helper', 'init' ), 9, 0 );
-		}
-
+		add_action( 'plugins_loaded', array( $this, 'early_initalization' ), 5 );
 		add_action( 'plugins_loaded', array( $this, 'after_plugins_loaded' ) );
-		add_action( 'plugins_loaded', array( $this, 'late_initialization' ), 90 );
+		add_action( 'plugins_loaded', array( $this, 'late_initalization' ), 90 );
 
 		add_filter(
 			'jetpack_connection_secret_generator',
@@ -740,9 +733,63 @@ class Jetpack {
 	}
 
 	/**
+	 * Runs on plugins_loaded but with a higher priority to make sure we're initializing
+	 * before other hooks.
+	 *
+	 * @action plugins_loaded
+	 * @priority 5
+	 */
+	public function early_initalization() {
+		/*
+		 * Enable enhanced handling of previewing sites in Calypso
+		 */
+		if ( self::is_active() ) {
+			require_once JETPACK__PLUGIN_DIR . '_inc/lib/class.jetpack-iframe-embed.php';
+			add_action( 'init', array( 'Jetpack_Iframe_Embed', 'init' ), 9, 0 );
+			require_once JETPACK__PLUGIN_DIR . '_inc/lib/class.jetpack-keyring-service-helper.php';
+			add_action( 'init', array( 'Jetpack_Keyring_Service_Helper', 'init' ), 9, 0 );
+		}
+
+		Sync_Main::init();
+
+		// Check for WooCommerce support.
+		Sync_Actions::initialize_woocommerce();
+
+		// Check for WP Super Cache.
+		Sync_Actions::initialize_wp_super_cache();
+	}
+
+	/**
+	 * Runs on plugins_loaded but with a lower priority.
+	 *
+	 * @action plugins_loaded
+	 * @priority 90
+	 */
+	public function late_initalization() {
+		/*
+		 * Init after plugins loaded and before the `init` action. This helps with issues where plugins init
+		 * with a high priority or sites that use alternate cron.
+		 */
+		Sync_Actions::init();
+
+		self::plugin_textdomain();
+		self::load_modules();
+	}
+
+	/**
 	 * Runs after all the plugins have loaded but before init.
 	 */
 	function after_plugins_loaded() {
+
+		/**
+		 * Fires when Jetpack is fully loaded and ready. This is the point where it's safe
+		 * to instantiate classes from packages and namespaces that are managed by the Jetpack Autoloader.
+		 *
+		 * @since 8.1.0
+		 *
+		 * @param Jetpack $jetpack the main plugin class object.
+		 */
+		do_action( 'jetpack_loaded', $this );
 
 		$terms_of_service = new Terms_Of_Service();
 		$tracking = new Plugin_Tracking();
