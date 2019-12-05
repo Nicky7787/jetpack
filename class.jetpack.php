@@ -376,7 +376,7 @@ class Jetpack {
 	/**
 	 * @var Automattic\Jetpack\Connection\Manager
 	 */
-	public $connection_manager;
+	protected $connection_manager;
 
 	/**
 	 * @var string Transient key used to prevent multiple simultaneous plugin upgrades
