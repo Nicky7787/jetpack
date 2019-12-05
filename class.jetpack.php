@@ -5184,8 +5184,25 @@ endif;
 		return self::connection()->xmlrpc_api_url();
 	}
 
+	/**
+	 * Returns the connection manager object.
+	 *
+	 * @deprecated 8.1 Use the dynamic get_connection method on the Jetpack instance, which can be received
+	 *                 as a parameter to the jetpack_loaded action.
+	 * @return Automattic\Jetpack\Connection\Manager
+	 */
 	public static function connection() {
+		_deprecated_function( __METHOD__, 'jetpack-8.1', 'Jetpack::get_connection()' );
 		return self::init()->connection_manager;
+	}
+
+	/**
+	 * Returns the connection manager object.
+	 *
+	 * @return Automattic\Jetpack\Connection\Manager
+	 */
+	public function get_connection() {
+		return $this->connection_manager;
 	}
 
 	/**

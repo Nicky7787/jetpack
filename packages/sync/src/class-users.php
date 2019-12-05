@@ -52,7 +52,7 @@ class Users {
 	 * @param Jetpack $jetpack object.
 	 */
 	public static function on_jetpack_loaded( $jetpack ) {
-		self::$connection = $jetpack->connection_manager;
+		self::$connection = $jetpack->get_connection();
 		if ( self::$connection->is_active() ) {
 			// Kick off synchronization of user role when it changes.
 			add_action( 'set_user_role', array( __CLASS__, 'user_role_change' ) );
