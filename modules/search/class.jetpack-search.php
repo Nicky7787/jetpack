@@ -153,7 +153,7 @@ class Jetpack_Search {
 	 * @since 5.0.0
 	 */
 	public function setup() {
-		if ( ! Jetpack::is_active() || ! Jetpack_Plan::supports( 'search' ) ) {
+		if ( ! Jetpack::is_active() || ! $this->is_search_supported() ) {
 			/**
 			 * Fires when the Jetpack Search fails and would fallback to MySQL.
 			 *
@@ -280,6 +280,19 @@ class Jetpack_Search {
 				wp_enqueue_style( 'jetpack-instant-search', $style_path, array(), $style_version );
 			}
 		}
+	}
+
+	/**
+	 * Is search supported on the current plan
+	 *
+	 * @since 6.0
+	 * Loads scripts for Tracks analytics library
+	 */
+	public function is_search_supported() {
+		if ( method_exists( 'Jetpack_Plan', 'supports' ) ) {
+			return Jetpack_Plan::supports( 'search' );
+		}
+		return false;
 	}
 
 	/**
