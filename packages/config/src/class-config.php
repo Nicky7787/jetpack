@@ -47,7 +47,7 @@ class Config {
 
 		add_action( 'plugins_loaded', array( $this, 'on_plugins_loaded_early' ), 5 );
 		add_action( 'plugins_loaded', array( $this, 'on_plugins_loaded' ) );
-		add_action( 'plugins_loaded', array( $this, 'on_plugins_loaded_late' ) );
+		add_action( 'plugins_loaded', array( $this, 'on_plugins_loaded_late' ), 90 );
 	}
 
 	/**
